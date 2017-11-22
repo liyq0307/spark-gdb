@@ -1,9 +1,9 @@
 package com.esri.app
 
 import com.esri.core.geometry.Polyline
-import org.apache.spark.sql.udt.{PointType, PolylineType}
+import org.apache.spark.sql.udt.{Logging, PointType, PolylineType}
 import org.apache.spark.sql.{SQLContext, SaveMode}
-import org.apache.spark.{Logging, SparkConf, SparkContext}
+import org.apache.spark.{SparkConf, SparkContext}
 
 /**
   */

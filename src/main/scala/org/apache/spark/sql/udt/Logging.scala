@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.spark
+package org.apache.spark.sql.udt
 
 import org.apache.spark.internal.{Logging => ILogging}
 

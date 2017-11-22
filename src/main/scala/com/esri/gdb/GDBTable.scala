@@ -5,8 +5,8 @@ import java.nio.ByteBuffer
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
-import org.apache.spark.Logging
 import org.apache.spark.sql.types.{MetadataBuilder, StructType}
+import org.apache.spark.sql.udt.Logging
 
 import scala.collection.mutable.ArrayBuffer
 

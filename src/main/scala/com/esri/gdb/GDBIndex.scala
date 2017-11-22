@@ -5,7 +5,7 @@ import java.nio.{ByteBuffer, ByteOrder}
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FSDataInputStream, Path}
-import org.apache.spark.Logging
+import org.apache.spark.sql.udt.Logging
 
 object GDBIndex {
   def apply(path: String, name: String, conf: Configuration = new Configuration()) = {
