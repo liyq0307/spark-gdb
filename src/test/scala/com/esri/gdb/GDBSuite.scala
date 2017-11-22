@@ -2,7 +2,6 @@ package com.esri.gdb
 
 import com.esri.core.geometry.Envelope2D
 import org.apache.spark.sql.udt.{PointType, PolygonType, PolylineMType, PolylineType}
-import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.{DataFrame, SQLContext}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.joda.time.{DateTime, DateTimeZone}
@@ -60,12 +59,11 @@ class GDBSuite extends FunSuite with BeforeAndAfterAll {
   }
 
   test("Lines") {
-    //doLines(sqlContext.gdbFile(gdbPath, "Lines", 2))
-    doLines(sqlContext.gdbFile("F:\\Data\\GDB\\OsmData.gdb", "highway", 2))
+    doLines(sqlContext.gdbFile(gdbPath, "Lines", 2))
+    //doLines(sqlContext.gdbFile("F:\\Data\\GDB\\OsmData.gdb", "highway", 2))
   }
 
   def doLines(dataFrame: DataFrame): Unit = {
-    val ss = dataFrame.select("Shape").collect()
     val xyTolerance = dataFrame.schema("Shape").metadata.getDouble("xyTolerance")
 
     val results = dataFrame.select("Shape",
@@ -155,13 +153,11 @@ class GDBSuite extends FunSuite with BeforeAndAfterAll {
   }
 
   test("Polygons") {
-    //doPolygons(sqlContext.gdbFile(gdbPath, "Polygons", 2))
-    doPolygons(sqlContext.gdbFile("F:\\Data\\GDB\\OsmData.gdb", "landuse", 2))
+    doPolygons(sqlContext.gdbFile(gdbPath, "Polygons", 2))
+    //doPolygons(sqlContext.gdbFile("F:\\Data\\GDB\\OsmData.gdb", "landuse", 2))
   }
 
   def doPolygons(dataFrame: DataFrame): Unit = {
-    val dd = dataFrame.schema("Shape").metadata
-    val ss = dataFrame.schema.fields(1).dataType.typeName
     dataFrame.filter("OBJECTID >=1 AND OBJECTID <= 2").show()
     val xyTolerance = dataFrame.schema("Shape").metadata.getDouble("xyTolerance")
 
@@ -269,5 +265,4 @@ class GDBSuite extends FunSuite with BeforeAndAfterAll {
 
     assert(row.getString(7) === "{2AA7D58D-2BF4-4943-83A8-457B70DB1871}")
   }
-
 }

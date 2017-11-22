@@ -41,7 +41,7 @@ object Main extends App with Logging {
       .option("numPartitions", "1")
       .load()
     df.printSchema()
-    df.registerTempTable(name)
+    df.createOrReplaceTempView(name)
     sqlContext.udf.register("getX", (point: PointType) => point.x)
     sqlContext.udf.register("getY", (point: PointType) => point.y)
     sqlContext.udf.register("line", (point: PointType) => PolylineType({
