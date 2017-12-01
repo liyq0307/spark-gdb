@@ -1,6 +1,5 @@
 package org.apache.spark.sql.udt
 
-import com.esri.core.geometry._
 import org.apache.spark.sql.types.SQLUserDefinedType
 
 /**
@@ -8,13 +7,7 @@ import org.apache.spark.sql.types.SQLUserDefinedType
 @SQLUserDefinedType(udt = classOf[PointZUDT])
 class PointZType(val x: Double = 0.0, val y: Double = 0.0, val z: Double = 0.0) extends SpatialType {
 
-  /*@transient lazy override val*/ def asGeometry() = asPoint()
-
-  def asPoint() = {
-    new Point(x, y, z)
-  }
-
-  def ==(that: PointZType) = this.x == that.x && this.y == that.y && this.z == that.z
+  def ==(that: PointZType): Boolean = this.x == that.x && this.y == that.y && this.z == that.z
 
   override def equals(other: Any): Boolean = other match {
     case that: PointZType => this == that
@@ -33,11 +26,6 @@ class PointZType(val x: Double = 0.0, val y: Double = 0.0, val z: Double = 0.0) 
 }
 
 object PointZType {
-  def apply(geometry: Geometry) = geometry match {
-    case point: Point => new PointZType(point.getX, point.getY, point.getM)
-    case _ => throw new RuntimeException(s"Cannot construct PointZType from ${geometry.toString}")
-  }
-
   def apply(x: Double, y: Double, z: Double) = new PointZType(x, y, z)
 
   def unapply(p: PointZType) = Some((p.x, p.y, p.z))
