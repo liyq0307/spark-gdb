@@ -7,23 +7,6 @@ Understanding the internal file structure enables partitioning to perform massiv
 The reading API is based on the [Hadoop File System API](https://hadoop.apache.org/docs/r2.7.1/api/index.html?org/apache/hadoop/fs/FileSystem.html) enabling the placement of the GDB in HDFS or S3 (not tested) for multi node access.
 There is still a lot to be done, but is a good start. Eventually, I will merge this project with my [Ibn Battuta Project](https://github.com/mraad/ibn-battuta).
 
-### TODO (not in specified order)
-
-Update (Jan 7 2016) - for Polylines and Polygons, I'm mimicking the core Spark Vector class. In a way, they have almost the same semantics.
-
-* Implement asGeometry
-* ~~Use [Esri Geometry Library](https://github.com/Esri/geometry-api-java) rather than JTS (I love JTS, so many utility functions on they geometry model)~~
-* Implement ~~Point~~, ~~Polyline~~ and ~~Polygon~~ as Spatial Type using UDT spec.
-* Handle more shapes - multiXXX and with Z and M
-* Read default values in field definitions
-* Register custom [Kryo](https://github.com/EsotericSoftware/kryo) serializer for shapes (optimization - but worth it :-)
-* Perform a scan rather than a seek if the index row count is the same as the table count (should help performance)
-* Test Multi part geometries
-* Test XML field type
-* Test Blob field type
-* Handle Raster (super low priority)
-* Make internal structure of Shapes more like [GeoJSON](http://geojson.org/geojson-spec.html) but will be heavy for SerDe !
-
 ## Building From Source
 
 This project build process is based on [Apache Maven](https://maven.apache.org/)
@@ -47,8 +30,8 @@ $SPARK_HOME/bin/spark-shell --packages com.esri:spark-gdb:0.7
 ```
 
 ```scala
-import com.esri.gdb._
-import com.esri.udt._
+import org.apache.spark.sql.gdb.core._
+import org.apache.spark.sql.gdb.udf._
 sc.gdbFile("src/test/resources/Test.gdb", "Points", numPartitions = 2).map(row => {
   row.getAs[PointType](row.fieldIndex("Shape"))
 }).foreach(println)
@@ -56,7 +39,7 @@ sc.gdbFile("src/test/resources/Test.gdb", "Points", numPartitions = 2).map(row =
 
 ```scala
 val df = sqlContext.read.
-    format("com.esri.gdb").
+    format("org.apache.spark.sql.gdb").
     option("path", "src/test/resources/Test.gdb").
     option("name", "Points").
     load()
@@ -69,10 +52,9 @@ sqlContext.sql(s"select * from points").show()
 
 For the Spatial UDT (User Defined Types), I am following the `VectorUDT` implementation.
 
-In Scala:
-
 ```scala
-val df = sqlContext.read.format("com.esri.gdb")
+val df = sqlContext.read
+  .format("org.apache.spark.sql.gdb")
   .option("path", path)
   .option("name", name)
   .option("numPartitions", "1")
@@ -88,28 +70,6 @@ sqlContext.udf.register("plus2", (point: PointType) => PointType(point.x + 2, po
 sqlContext.sql(s"select getX(plus2(Shape)),getX(Shape) as y from $name")
   .show(20)
 ```
-
-In Python:
-
-```python
-df = sqlContext.read \
-    .format("com.esri.gdb") \
-    .options(path="../../test/resources/Test.gdb", name=gdb_name, numPartitions="1") \
-    .load()
-
-df.printSchema()
-
-df.registerTempTable(gdb_name)
-
-sqlContext.registerFunction("getX", lambda p: p.x, DoubleType())
-sqlContext.registerFunction("getY", lambda p: p.y, DoubleType())
-sqlContext.registerFunction("plus2", lambda p: PointType(p.x + 2, p.y + 2), PointUDT())
-
-rows = sqlContext.sql("select plus2(Shape),X,Y from {}".format(gdb_name))
-for row in rows.collect():
-    print row
-```
-
 ## Testing In HDFS (Yet Another Excuse To Use Docker :-)
 
 We will use [Docker](https://www.docker.com/) to bootstrap a [Cloudera quickstart](https://www.cloudera.com/content/www/en-us/documentation/enterprise/latest/topics/quickstart_docker_container.html) container instance.
@@ -174,8 +134,8 @@ spark-shell --jars /Users/<YOUR_PATH>/spark-gdb/target/spark-gdb-0.7.jar
 
 Submit a Spark Context job:
 ```scala
-import com.esri.gdb._
-import com.esri.udt.PointType
+import org.apache.spark.sql.gdb.core._
+import org.apache.spark.sql.gdb.udf.PointType
 sc.gdbFile("hdfs:///data/Test.gdb", "Points", numPartitions = 2).map(row => {
   row.getAs[PointType](row.fieldIndex("Shape"))
 }).foreach(println)
@@ -184,7 +144,7 @@ sc.gdbFile("hdfs:///data/Test.gdb", "Points", numPartitions = 2).map(row => {
 Submit a SQL Context job:
 ```scala
 val df = sqlContext.read.
-    format("com.esri.gdb").
+    format("org.apache.spark.sql.gdb").
     option("path", "hdfs:///data/Test.gdb").
     option("name", "Lines").
     option("numPartitions", "2").
