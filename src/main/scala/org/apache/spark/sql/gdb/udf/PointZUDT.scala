@@ -2,6 +2,7 @@ package org.apache.spark.sql.gdb.udf
 
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.GenericInternalRow
+import org.apache.spark.sql.gdb
 import org.apache.spark.sql.types._
 
 /**
@@ -34,7 +35,7 @@ class PointZUDT extends UserDefinedType[PointZType] {
 
   override def userClass: Class[PointZType] = classOf[PointZType]
 
-  override def pyUDT: String = "com.esri.udt.PointZUDT"
+  override def pyUDT: String = s"${gdb.sparkGDB}.udt.PointZUDT"
 
   override def typeName: String = "pointZ"
 

@@ -1,7 +1,7 @@
 package org.apache.spark.sql.gdb.core
 
 import org.apache.spark.sql.gdb.udf.{PointType, PolygonType, PolylineMType, PolylineType}
-import org.apache.spark.sql.{DataFrame, SQLContext}
+import org.apache.spark.sql.{DataFrame, SQLContext, gdb}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.joda.time.{DateTime, DateTimeZone}
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
@@ -189,7 +189,7 @@ class GDBSuite extends FunSuite with BeforeAndAfterAll {
     sqlContext.sql(
       s"""
          |CREATE TEMPORARY TABLE points
-         |USING org.apache.spark.sql.gdb
+         |USING ${gdb.sparkGDB}
          |OPTIONS (path "$gdbPath", name "Points", numPartitions "1")
       """.stripMargin.replaceAll("\n", " "))
 

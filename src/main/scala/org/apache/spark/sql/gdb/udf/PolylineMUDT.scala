@@ -1,6 +1,7 @@
 package org.apache.spark.sql.gdb.udf
 
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.gdb
 
 /**
   */
@@ -18,7 +19,7 @@ class PolylineMUDT extends PolyUDT[PolylineMType] {
 
   override def userClass = classOf[PolylineMType]
 
-  override def pyUDT = "com.esri.udt.PolylineMUDT"
+  override def pyUDT = s"${gdb.sparkGDB}.udt.PolylineMUDT"
 
   override def typeName = "polylineM"
 

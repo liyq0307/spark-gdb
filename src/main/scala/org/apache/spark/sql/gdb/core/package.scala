@@ -6,7 +6,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.sql.SQLContext
 
 /**
-  * Created by liyan on 2017/12/1.
+  * Created by liyq on 2017/12/1.
   */
 package object core {
 

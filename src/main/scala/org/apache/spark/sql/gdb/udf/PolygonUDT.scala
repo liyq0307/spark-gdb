@@ -1,6 +1,7 @@
 package org.apache.spark.sql.gdb.udf
 
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.gdb
 
 /**
   */
@@ -20,7 +21,7 @@ class PolygonUDT extends PolyUDT[PolygonType] {
 
   override def userClass = classOf[PolygonType]
 
-  override def pyUDT = "com.esri.udt.PolygonUDT"
+  override def pyUDT = s"${gdb.sparkGDB}.udt.PolygonUDT"
 
   override def typeName = "polygon"
 
