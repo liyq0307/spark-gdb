@@ -18,12 +18,12 @@ class GDBTable(dataBuffer: DataBuffer,
 
   def schema() = StructType(fields)
 
-  def rowIterator(index: GDBIndex, startAtRow: Int = 0, numRowsToRead: Int = -1) = {
+  def rowIterator(index: GDBIndex, startAtRow: Int = 0, numRowsToRead: Int = -1): GDBRowIterator = {
     // log.info(s"rowIterator::startAtRow=$startAtRow numRowsToRead=$numRowsToRead")
-    new GDBRowIterator(index.iterator(startAtRow, numRowsToRead), dataBuffer, fields, schema)
+    new GDBRowIterator(index.iterator(startAtRow, numRowsToRead), dataBuffer, fields, schema())
   }
 
-  def seekIterator(indexIter: Iterator[IndexInfo]) = {
+  def seekIterator(indexIter: Iterator[IndexInfo]): Iterator[Map[String, Any]] = {
     val numFieldsWithNullAllowed = fields.count(_.nullable)
     if (numFieldsWithNullAllowed == 0)
       new GDBTableSeekWithNoNullValues(dataBuffer, fields, indexIter)
@@ -32,20 +32,20 @@ class GDBTable(dataBuffer: DataBuffer,
   }
 
   // TODO - add Iterator for no null values
-  def scanIterator(seek: Int, count: Int = -1, startID: Int = 0) = {
+  def scanIterator(seek: Int, count: Int = -1, startID: Int = 0): GDBTableScanWithNullValues = {
     dataBuffer.seek(seek)
     val maxRows = if (count == -1) numRows else count
     new GDBTableScanWithNullValues(dataBuffer, fields, maxRows, startID)
   }
 
-  def close() {
+  def close(): Unit = {
     dataBuffer.close()
   }
 
 }
 
 object GDBTable extends Logging with Serializable {
-  def apply(path: String, name: String, conf: Configuration = new Configuration()) = {
+  def apply(path: String, name: String, conf: Configuration = new Configuration()): GDBTable = {
     val filename = StringBuilder.newBuilder.append(path).append(File.separator).append(name).append(".gdbtable").toString()
     val hdfsPath = new Path(filename)
     val dataBuffer = DataBuffer(hdfsPath.getFileSystem(conf).open(hdfsPath))
@@ -66,14 +66,14 @@ object GDBTable extends Logging with Serializable {
 
     val fields = 0 until numFields map (_ => {
       val nameLen = bb2.get
-      val name = ((0 until nameLen).foldLeft(new StringBuilder(nameLen))((sb, _) => {
+      val name = (0 until nameLen).foldLeft(new StringBuilder(nameLen))((sb, _) => {
         sb.append(bb2.getChar)
-      })).toString
+      }).toString
 
       val aliasLen = bb2.get
-      val aliasTemp = ((0 until aliasLen).foldLeft(new StringBuilder(aliasLen))((sb, _) => {
+      val aliasTemp = (0 until aliasLen).foldLeft(new StringBuilder(aliasLen))((sb, _) => {
         sb.append(bb2.getChar)
-      })).toString
+      }).toString
       val alias = if (aliasTemp.isEmpty) name else aliasTemp
 
       // println(s"$name $alias")
@@ -120,7 +120,11 @@ object GDBTable extends Logging with Serializable {
     val metadata = new MetadataBuilder()
       .putString("alias", alias)
       .build()
-    new FieldFloat64(name, (flag & 1) == 1, metadata)
+    val field = new FieldFloat64(name, (flag & 1) == 1, metadata)
+    if ((flag & 4) != 0 && mask == 8) {
+      bb.getDouble
+    }
+    field
   }
 
   private def toFieldFloat32(bb: ByteBuffer, name: String, alias: String): Field = {
@@ -130,7 +134,11 @@ object GDBTable extends Logging with Serializable {
     val metadata = new MetadataBuilder()
       .putString("alias", alias)
       .build()
-    new FieldFloat32(name, (flag & 1) == 1, metadata)
+    val field = new FieldFloat32(name, (flag & 1) == 1, metadata)
+    if ((flag & 4) != 0 && mask == 4) {
+      bb.getFloat()
+    }
+    field
   }
 
   private def toFieldInt16(bb: ByteBuffer, name: String, alias: String): Field = {
@@ -140,7 +148,11 @@ object GDBTable extends Logging with Serializable {
     val metadata = new MetadataBuilder()
       .putString("alias", alias)
       .build()
-    new FieldInt16(name, (flag & 1) == 1, metadata)
+    val field = new FieldInt16(name, (flag & 1) == 1, metadata)
+    if ((flag & 4) != 0 && mask == 2) {
+      bb.getShort()
+    }
+    field
   }
 
   private def toFieldInt32(bb: ByteBuffer, name: String, alias: String): Field = {
@@ -150,7 +162,11 @@ object GDBTable extends Logging with Serializable {
     val metadata = new MetadataBuilder()
       .putString("alias", alias)
       .build()
-    new FieldInt32(name, (flag & 1) == 1, metadata)
+    val field = new FieldInt32(name, (flag & 1) == 1, metadata)
+    if ((flag & 4) != 0 && mask == 4) {
+      bb.getInt()
+    }
+    field
   }
 
   private def toFieldBinary(bb: ByteBuffer, name: String, alias: String): Field = {
@@ -188,7 +204,13 @@ object GDBTable extends Logging with Serializable {
       .putString("alias", alias)
       .putLong("maxLength", maxLen)
       .build()
-    new FieldString(name, (flag & 1) == 1, metadata)
+    val field = new FieldString(name, (flag & 1) == 1, metadata)
+    if ((flag & 4) != 0 && mask > 0) {
+      for (_ <- 0 until mask) {
+        bb.get
+      }
+    }
+    field
   }
 
   private def toFieldDateTime(bb: ByteBuffer, name: String, alias: String): Field = {
@@ -198,7 +220,11 @@ object GDBTable extends Logging with Serializable {
     val metadata = new MetadataBuilder()
       .putString("alias", alias)
       .build()
-    new FieldDateTime(name, (flag & 1) == 1, metadata)
+    val field = new FieldDateTime(name, (flag & 1) == 1, metadata)
+    if ((flag & 4) != 0 && mask == 8) {
+      bb.getDouble()
+    }
+    field
   }
 
   private def toFieldOID(bb: ByteBuffer, name: String, alias: String): Field = {
@@ -301,7 +327,7 @@ object GDBTable extends Logging with Serializable {
     }
   }
 
-  def listTables(path: String, conf: Configuration = new Configuration()) = {
+  def listTables(path: String, conf: Configuration = new Configuration()): Array[CatRow] = {
     val index = GDBIndex(path, "a00000001", conf)
     try {
       val table = GDBTable(path, "a00000001", conf)
@@ -318,7 +344,7 @@ object GDBTable extends Logging with Serializable {
     }
   }
 
-  def findTable(path: String, tableName: String, conf: Configuration = new Configuration()) = {
+  def findTable(path: String, tableName: String, conf: Configuration = new Configuration()): Option[CatRow] = {
     // log.info(s"findTable::$tableName")
     val index = GDBIndex(path, "a00000001", conf)
     try {

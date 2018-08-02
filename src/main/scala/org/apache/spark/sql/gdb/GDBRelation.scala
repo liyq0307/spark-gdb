@@ -15,7 +15,7 @@ case class GDBRelation(gdbPath: String, gdbName: String, numPartition: Int)
 
   override val schema: StructType = inferSchema()
 
-  private[gdb] def inferSchema() = {
+  private[gdb] def inferSchema(): StructType = {
     val sc = sqlContext.sparkContext
     GDBTable.findTable(gdbPath, gdbName, sc.hadoopConfiguration) match {
       case Some(catTab) => {
