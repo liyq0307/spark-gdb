@@ -31,12 +31,7 @@ class GDBSuite extends FunSuite with BeforeAndAfterAll {
     }
   }
 
-  private val gdbPath = "E:/Data/GDB/raster.gdb"
-
-  test("123") {
-    val df = sqlContext.gdbFile(gdbPath, "AMD_test20160811_OVR", 8)
-    df.show()
-  }
+  private val gdbPath = "src/test/resources/Test.gdb"
 
   test("Points") {
     doPoints(sqlContext.gdbFile(gdbPath, "Points", 2))
