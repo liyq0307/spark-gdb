@@ -91,6 +91,7 @@ object GDBTable extends Logging with Serializable {
         case GDBFieldType.BINARY => toFieldBinary(bb2, name, alias)
         case GDBFieldType.UUID | GDBFieldType.GUID => toFieldUUID(bb2, name, alias)
         case GDBFieldType.XML => toFieldXML(bb2, name, alias)
+        case GDBFieldType.RASTER => toFieldRaster(bb2, name, alias)
         case _ => throw new RuntimeException(s"Field type $fieldType is not supported")
       }
     })
@@ -234,6 +235,68 @@ object GDBTable extends Logging with Serializable {
       .putString("alias", alias)
       .build()
     new FieldOID(name, (flag & 1) == 1, metadata)
+  }
+
+  private def toFieldRaster(bb: ByteBuffer, name: String, alias: String): Field = {
+    bb.get // unk
+    val flag = bb.get // 6 or 7. If lsb is 1, the field can be null.
+    val nullAllowed = (flag & 1) == 1
+    val carCount = bb.get
+    val osRasterColumn = (0 until carCount).foldLeft(new StringBuilder(carCount))((sb, _) => {
+      sb.append(bb.getChar)
+    }).toString
+
+    val crsLen = bb.getShort
+    val crsChars = crsLen / 2
+    val stringBuilder = new StringBuilder(crsChars)
+    0 until crsChars foreach (_ => stringBuilder.append(bb.getChar))
+    val crs = stringBuilder.toString
+
+    val zAndM = bb.get
+    val (hasZ, hasM) = zAndM match {
+      case 7 => (true, true)
+      case 5 => (true, false)
+      case _ => (false, false)
+    }
+
+    val xOrig = bb.getDouble
+    val yOrig = bb.getDouble
+    val xyScale = bb.getDouble
+    val mOrig = if (hasM) bb.getDouble else 0.0
+    val mScale = if (hasM) bb.getDouble else 0.0
+    val zOrig = if (hasZ) bb.getDouble else 0.0
+    val zScale = if (hasZ) bb.getDouble else 0.0
+    val xyTolerance = bb.getDouble
+    val mTolerance = if (hasM) bb.getDouble else 0.0
+    val zTolerance = if (hasZ) bb.getDouble else 0.0
+    bb.get
+
+    val metadataBuilder = new MetadataBuilder()
+      .putString("RasterColumn", osRasterColumn)
+      .putString("alias", alias)
+      .putString("crs", crs)
+      .putDouble("xorigin", xOrig)
+      .putDouble("yorigin", yOrig)
+      .putDouble("xyscale", xyScale)
+      .putBoolean("hasZ", hasZ)
+      .putBoolean("hasM", hasM)
+      .putDouble("xyTolerance", xyTolerance)
+
+    if (hasZ) {
+      metadataBuilder.putDouble("zorigin", zOrig)
+      metadataBuilder.putDouble("zscale", zScale)
+      metadataBuilder.putDouble("zTolerance", zTolerance)
+    }
+
+    if (hasM) {
+      metadataBuilder.putDouble("morigin", mOrig)
+      metadataBuilder.putDouble("mscale", mScale)
+      metadataBuilder.putDouble("mTolerance", mTolerance)
+    }
+
+    val metadata = metadataBuilder.build()
+
+    new FieldRaster(alias, nullAllowed, metadata)
   }
 
   private def toFieldGeom(bb: ByteBuffer, name: String, alias: String, geometryType: Byte, geometryProp: Int): Field = {
