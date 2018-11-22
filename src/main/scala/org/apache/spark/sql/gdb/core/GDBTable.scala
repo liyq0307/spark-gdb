@@ -113,9 +113,9 @@ object GDBTable extends Logging with Serializable {
     val h5 = bb.getInt
     val fs = bb.getInt // file size - can be negative - maybe uint ?
     val h7 = bb.getInt
-    val h8 = bb.getInt
-    val h9 = bb.getInt
-    dataBuffer.seek(h8)
+    val h8 = bb.getUInt()
+    val h9 = bb.getUInt() << 32
+    dataBuffer.seek(h8 | h9)
     numRows
   }
 
