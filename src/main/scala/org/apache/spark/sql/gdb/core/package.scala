@@ -40,6 +40,10 @@ package object core {
       }
       if (isNeg) -ret else ret
     }
+
+    implicit def getUInt(): Long = {
+      byteBuffer.getInt().toLong & 0x0FFFFFFFFL
+    }
   }
 
   implicit class SparkContextImplicits(sc: SparkContext) {

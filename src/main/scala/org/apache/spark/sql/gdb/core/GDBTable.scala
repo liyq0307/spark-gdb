@@ -13,8 +13,10 @@ import scala.collection.mutable.ArrayBuffer
 class GDBTable(dataBuffer: DataBuffer,
                val numRows: Int,
                val geometryType: Int,
+               val objectIDName: String,
                val fields: Array[Field]
               ) extends Logging with AutoCloseable with Serializable {
+  def getIDName: String = objectIDName
 
   def schema() = StructType(fields)
 
@@ -63,6 +65,7 @@ object GDBTable extends Logging with Serializable {
     // println(s"gdbType=$i1 $b2 $b3 $geometryProp")
 
     val bb2 = dataBuffer.readBytes(numBytes)
+    var objectIDName = "OBJECTID"
 
     val fields = 0 until numFields map (_ => {
       val nameLen = bb2.get
@@ -86,7 +89,9 @@ object GDBTable extends Logging with Serializable {
         case GDBFieldType.FLOAT64 => toFieldFloat64(bb2, name, alias)
         case GDBFieldType.DATETIME => toFieldDateTime(bb2, name, alias)
         case GDBFieldType.STRING => toFieldString(bb2, name, alias)
-        case GDBFieldType.OID => toFieldOID(bb2, name, alias)
+        case GDBFieldType.OID =>
+          objectIDName = name
+          toFieldOID(bb2, name, alias)
         case GDBFieldType.SHAPE => toFieldGeom(bb2, name, alias, geometryType, geometryProp)
         case GDBFieldType.BINARY => toFieldBinary(bb2, name, alias)
         case GDBFieldType.UUID | GDBFieldType.GUID => toFieldUUID(bb2, name, alias)
@@ -95,7 +100,7 @@ object GDBTable extends Logging with Serializable {
         case _ => throw new RuntimeException(s"Field type $fieldType is not supported")
       }
     })
-    new GDBTable(dataBuffer, numRows, geometryType, fields.toArray)
+    new GDBTable(dataBuffer, numRows, geometryType, objectIDName, fields.toArray)
   }
 
   private def readHeader(dataBuffer: DataBuffer) = {

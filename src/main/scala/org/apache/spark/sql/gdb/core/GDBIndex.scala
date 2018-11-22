@@ -74,7 +74,17 @@ private[gdb] class GDBIndexIterator(dataInput: DataInput,
 
     byteBuffer.clear
     dataInput.readFully(bytes)
-    indexInfo.seek = byteBuffer.getInt
+
+    indexInfo.seek = if (indexSize == 4) {
+      byteBuffer.getUInt()
+    } else if (indexSize == 5) {
+      val byte4: Long = byteBuffer.get(4).toLong
+      byteBuffer.getUInt() | (byte4 << 32)
+    } else {
+      val byte4: Long = byteBuffer.get(4).toLong
+      val byte5: Long = byteBuffer.get(4).toLong
+      byteBuffer.getUInt() | (byte4 << 32) | (byte5 << 40)
+    }
 
     indexInfo
   }
