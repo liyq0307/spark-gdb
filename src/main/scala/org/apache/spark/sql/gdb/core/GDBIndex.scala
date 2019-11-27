@@ -9,7 +9,8 @@ import org.apache.spark.internal.Logging
 
 object GDBIndex {
   def apply(path: String, name: String, conf: Configuration = new Configuration()) = {
-    val filename = StringBuilder.newBuilder.append(path).append(File.separator).append(name).append(".gdbtablx").toString()
+    var filename = StringBuilder.newBuilder.append(path).append(File.separator).append(name).append(".gdbtablx").toString()
+    filename = filename.replace("\\", "/").trim
     val hdfsPath = new Path(filename)
     val dataInput = hdfsPath.getFileSystem(conf).open(hdfsPath)
 

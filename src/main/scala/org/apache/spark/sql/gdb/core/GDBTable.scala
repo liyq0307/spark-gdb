@@ -48,7 +48,8 @@ class GDBTable(dataBuffer: DataBuffer,
 
 object GDBTable extends Logging with Serializable {
   def apply(path: String, name: String, conf: Configuration = new Configuration()): GDBTable = {
-    val filename = StringBuilder.newBuilder.append(path).append(File.separator).append(name).append(".gdbtable").toString()
+    var filename = StringBuilder.newBuilder.append(path).append(File.separator).append(name).append(".gdbtable").toString()
+    filename = filename.replace("\\", "/").trim
     val hdfsPath = new Path(filename)
     val dataBuffer = DataBuffer(hdfsPath.getFileSystem(conf).open(hdfsPath))
     val numRows = readHeader(dataBuffer)
