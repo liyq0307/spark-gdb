@@ -15,14 +15,14 @@ abstract class FieldPoly2Type[T](name: String,
 
   override def readValue(byteBuffer: ByteBuffer, oid: Int) = {
     val blob = getByteBuffer(byteBuffer)
-
     val geomType = blob.getVarUInt
+    val hasCurveDesc = (geomType & 0x20000000L) != 0L
     val numPoints = blob.getVarUInt.toInt
     if (numPoints == 0)
       createPolyType(0, 0, 0, 0, Array.empty[Int], Array.empty[Double])
     else {
       val numParts = blob.getVarUInt.toInt
-
+      if (hasCurveDesc) blob.getVarUInt()
       val xmin = blob.getVarUInt / xyScale + xOrig
       val ymin = blob.getVarUInt / xyScale + yOrig
       val xmax = blob.getVarUInt / xyScale + xmin
